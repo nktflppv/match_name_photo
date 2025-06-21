@@ -1,134 +1,297 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Найди имя к фотографии</title>
-  <style>
-    :root {
-      --card-size: 140px;
-    }
-    *{box-sizing:border-box;padding:0;margin:0}
-    body{
-      font-family:'Segoe UI',sans-serif;
-      background:#fff8dc;
-      padding:20px;
-      text-align:center;
-    }
-    h1{font-size:2rem;color:#333;margin-bottom:12px}
-    p.subtitle{margin-bottom:20px;color:#444}
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Найди имя к фотографии (Адаптивная версия)</title>
+    <!-- Подключение Tailwind CSS для стилизации -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Подключение шрифта Inter из Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        /* Основные стили и кастомные анимации */
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f3f4f6;
+        }
 
-    /* фото‑сет */
-    #photos{
-      display:grid;
-      grid-template-columns:repeat(auto-fit,minmax(var(--card-size),1fr));
-      gap:18px;
-      max-width:800px;
-      margin:0 auto 24px;
-    }
-    .card{
-      background:#fff;
-      border-radius:16px;
-      padding:8px;
-      box-shadow:0 2px 6px rgba(0,0,0,.12);
-      cursor:pointer;
-      transition:transform .25s,border .25s;
-    }
-    .card img{
-      width:100%;
-      height:var(--card-size);
-      object-fit:cover;
-      border-radius:12px;
-    }
+        /* Анимация неправильного ответа */
+        @keyframes shake {
+            0%, 100% { transform: translateX(0) scale(1.03); }
+            10%, 30%, 50%, 70%, 90% { transform: translateX(-5px) scale(1.03); }
+            20%, 40%, 60%, 80% { transform: translateX(5px) scale(1.03); }
+        }
+        .shake {
+            animation: shake 0.6s ease-in-out;
+        }
 
-    /* список имён */
-    #names{
-      display:flex;
-      flex-wrap:wrap;
-      justify-content:center;
-      gap:12px;
-      max-width:800px;
-      margin:0 auto;
-    }
-    .label{
-      background:#fff;
-      border-radius:12px;
-      padding:10px 18px;
-      box-shadow:0 2px 6px rgba(0,0,0,.12);
-      cursor:pointer;
-      transition:transform .25s,border .25s;
-      font-size:1rem;
-    }
+        /* Анимация правильного ответа */
+        @keyframes correct-match {
+            0% { transform: scale(1); opacity: 1; }
+            100% { transform: scale(0.8); opacity: 0; }
+        }
+        .matched {
+            animation: correct-match 0.5s forwards;
+        }
 
-    /* состояния */
-    .selected{border:3px solid dodgerblue;transform:scale(1.05)}
-    .correct{border:3px solid seagreen!important}
-    .wrong{border:3px solid crimson!important}
-
-    #message{margin-top:18px;font-weight:bold;font-size:1.1rem;min-height:1.2em}
-
-    @media(max-width:500px){
-      :root{--card-size:110px}
-      .label{font-size:.9rem}
-    }
-  </style>
+        /* Стиль для выбранной фотографии */
+        .selected {
+            border-color: #3b82f6; /* Яркий синий */
+            transform: scale(1.03);
+            box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+        }
+    </style>
 </head>
-<body>
-  <h1>Найди имя к фотографии</h1>
-  <p class="subtitle">Кликните сначала по фото, затем по подходящему имени</p>
+<body class="bg-gray-100 flex flex-col items-center min-h-screen p-4 sm:p-6">
 
-  <div id="photos"></div>
-  <div id="names"></div>
-  <p id="message"></p>
+    <div class="w-full max-w-6xl mx-auto">
+        <!-- Заголовок и описание -->
+        <div class="text-center mb-6">
+            <h1 class="text-3xl sm:text-4xl font-bold text-gray-800">Угадай, кто на фото</h1>
+            <p id="instruction" class="text-gray-600 mt-2">Нажмите на фото, чтобы выбрать.</p>
+            <div id="progress" class="mt-4 text-lg font-medium text-gray-700"></div>
+        </div>
+
+        <!-- Основной контейнер игры -->
+        <div id="gameWrap" class="flex flex-col lg:flex-row gap-6 lg:gap-8">
+            <!-- Сетка с фотографиями -->
+            <div id="photos" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-3 xl:grid-cols-4 gap-4 flex-grow">
+                <!-- Карточки фотографий будут добавлены здесь с помощью JS -->
+            </div>
+
+            <!-- Боковая панель с именами (видна на больших экранах) -->
+            <div id="panel" class="w-full lg:w-64 lg:min-w-[256px] bg-white rounded-xl shadow-md p-4 self-start hidden lg:block">
+                <h3 class="font-bold text-lg mb-4 text-gray-800 text-center">Имена</h3>
+                <div id="names-desktop" class="space-y-2 max-h-[60vh] overflow-y-auto pr-2">
+                    <!-- Имена для десктопа -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Сообщение о результате и кнопка перезапуска -->
+        <div id="message-container" class="text-center mt-6 min-h-[60px]">
+            <p id="message" class="text-xl font-semibold transition-all duration-300"></p>
+            <button id="restart-btn" class="hidden mt-4 px-6 py-2 bg-blue-500 text-white font-semibold rounded-lg shadow-md hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-opacity-75 transition-all">
+                Играть снова
+            </button>
+        </div>
+    </div>
+
+    <!-- Модальное окно с именами для мобильных устройств -->
+    <div id="names-modal" class="fixed inset-0 bg-black bg-opacity-60 hidden items-center justify-center p-4 z-50">
+        <div class="bg-white rounded-xl shadow-lg w-full max-w-sm max-h-[80vh] flex flex-col">
+            <h3 class="font-bold text-lg p-4 border-b text-center text-gray-800">Выберите имя</h3>
+            <div id="names-modal-list" class="space-y-2 overflow-y-auto p-4">
+                <!-- Имена для модального окна -->
+            </div>
+            <button id="close-modal-btn" class="p-4 border-t text-gray-600 hover:bg-gray-100 transition-colors">
+                Закрыть
+            </button>
+        </div>
+    </div>
+
 
 <script>
-  const inputFolder='input_photos';
-  const imageFilenames=[
-    "Юра Галишников.jpeg","Юля Цуркан.jpeg","Юля Клапатюк.jpeg","Сережа Григорьев.jpeg","Рома Янцер.jpeg","Полина Довнорович.jpeg","Никита Филиппов.jpeg","Наташа Кутукова.jpeg","Настя Канева.jpeg","Настя Аносова.jpeg","Маша Харламова.jpeg","Маша Овчинникова.jpeg","Максим Матиенко.jpeg","Максим Артемов.jpeg","Любава Кашина.jpeg","Ксюша Курдзюк.jpeg","Кристина Филиппова.jpeg","Кристина Филимонова.jpeg","Кирилл Сухов.jpeg","Илья Лазарев.jpeg","Ева Устюгова.jpeg","Даша Доронина.jpeg","Даня Алепенков.jpeg","Гузя Гильмутдинова.jpeg","Вика Инькова.jpeg","Ариша Панчул.jpeg","Алена Третьякова.jpeg"
-  ];
-  const people=imageFilenames.map(f=>f.replace(/\.jpe?g$/i,''));
+    document.addEventListener('DOMContentLoaded', () => {
+        // --- НАСТРОЙКИ И ДАННЫЕ ---
+        const inputFolder = 'input_photos';
+        const imageFilenames = [
+            "Юра Галишников.jpeg","Юля Цуркан.jpeg","Юля Клапатюк.jpeg","Сережа Григорьев.jpeg","Рома Янцер.jpeg","Полина Довнорович.jpeg","Никита Филиппов.jpeg","Наташа Кутукова.jpeg","Настя Канева.jpeg","Настя Аносова.jpeg","Маша Харламова.jpeg","Маша Овчинникова.jpeg","Максим Матиенко.jpeg","Максим Артёмов.jpeg","Любава Кашина.jpeg","Ксюша Курдзюк.jpeg","Кристина Филиппова.jpeg","Кристина Филимонова.jpeg","Кирилл Сухов.jpeg","Илья Лазарев.jpeg","Ева Устюгова.jpeg","Даша Доронина.jpeg","Даня Алепенков.jpeg","Гузя Гильмутдинова.jpeg","Вика Инькова.jpeg","Ариша Панчул.jpeg","Алёна Третьякова.jpeg"
+        ];
+        
+        let people = [];
+        let totalPeople = 0;
+        let matchedCount = 0;
+        let selectedPhotoCard = null;
 
-  const photosEl=document.getElementById('photos');
-  const namesEl=document.getElementById('names');
-  const msgEl=document.getElementById('message');
+        // --- DOM ЭЛЕМЕНТЫ ---
+        const photosEl = document.getElementById('photos');
+        const namesDesktopEl = document.getElementById('names-desktop');
+        const namesModalListEl = document.getElementById('names-modal-list');
+        const namesModal = document.getElementById('names-modal');
+        const closeModalBtn = document.getElementById('close-modal-btn');
+        const msgEl = document.getElementById('message');
+        const progressEl = document.getElementById('progress');
+        const restartBtn = document.getElementById('restart-btn');
+        const instructionEl = document.getElementById('instruction');
 
-  let selPhoto=null,selName=null,matched=0;
+        // --- ФУНКЦИИ ---
 
-  function shuffle(a){for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}}
+        const surnameSort = (a, b) => {
+            const surnameA = a.name.split(' ')[1] || '';
+            const surnameB = b.name.split(' ')[1] || '';
+            return surnameA.localeCompare(surnameB, 'ru');
+        };
 
-  function createPhotoCard(name){
-    const d=document.createElement('div');d.className='card';d.dataset.name=name;
-    const img=new Image();img.src=`${inputFolder}/${name}.jpeg`;img.alt=name;d.append(img);
-    d.onclick=()=>select(d,'photo');return d;
-  }
-  function createNameLabel(name){
-    const d=document.createElement('div');d.className='label';d.textContent=name;d.dataset.name=name;
-    d.onclick=()=>select(d,'name');return d;
-  }
+        const shuffleArray = (array) => {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]];
+            }
+        };
+        
+        const updateProgress = () => {
+            progressEl.textContent = `Найдено пар: ${matchedCount} из ${totalPeople}`;
+        };
+        
+        // Отображение имён (и в панели, и в модальном окне)
+        const renderNames = () => {
+            namesDesktopEl.innerHTML = '';
+            namesModalListEl.innerHTML = '';
 
-  function select(el,type){
-    if(type==='photo'){
-      selPhoto&&selPhoto.classList.remove('selected');selPhoto=el;el.classList.add('selected');
-    }else{
-      selName&&selName.classList.remove('selected');selName=el;el.classList.add('selected');
-    }
-    if(selPhoto&&selName){
-      const n1=selPhoto.dataset.name,n2=selName.dataset.name;
-      if(n1===n2){
-        [selPhoto,selName].forEach(e=>{e.classList.add('correct');e.style.pointerEvents='none'});
-        matched++;msgEl.textContent=`✅ Верно: ${n1}`;
-      }else{
-        [selPhoto,selName].forEach(e=>e.classList.add('wrong'));
-        msgEl.textContent='❌ Неверная пара';
-        setTimeout(()=>[selPhoto,selName].forEach(e=>e.classList.remove('wrong','selected')),800);
-      }
-      selPhoto=selName=null;
-      if(matched===people.length)msgEl.textContent='🎉 Все пары найдены!';
-    }
-  }
+            const remainingPeople = people.filter(p => !p.matched).sort(surnameSort);
 
-  shuffle(people);people.forEach(p=>photosEl.appendChild(createPhotoCard(p)));
-  shuffle(people);people.forEach(p=>namesEl.appendChild(createNameLabel(p)));
+            remainingPeople.forEach(person => {
+                const nameDiv = document.createElement('div');
+                nameDiv.textContent = person.name;
+                nameDiv.className = 'nameItem p-2.5 bg-gray-100 rounded-lg cursor-pointer hover:bg-gray-200 transition-colors duration-200 text-center';
+                nameDiv.addEventListener('click', () => handleNameClick(person.name));
+                
+                // Клонируем элемент для второго списка
+                namesDesktopEl.appendChild(nameDiv);
+                namesModalListEl.appendChild(nameDiv.cloneNode(true))
+                                .addEventListener('click', () => handleNameClick(person.name));
+            });
+        };
+
+        const renderPhotos = () => {
+            photosEl.innerHTML = '';
+            const shuffledPeople = [...people];
+            shuffleArray(shuffledPeople);
+
+            shuffledPeople.forEach(person => {
+                const card = document.createElement('div');
+                card.className = 'card bg-white rounded-xl shadow-sm border-2 border-transparent transition-all duration-200 cursor-pointer';
+                card.dataset.name = person.name;
+                card.addEventListener('click', () => handlePhotoClick(card));
+                
+                const img = new Image();
+                img.src = `${inputFolder}/${person.name}.jpeg`;
+                img.alt = `Фотография ${person.name}`;
+                img.className = 'w-full h-48 object-cover rounded-lg pointer-events-none';
+                
+                img.onerror = () => {
+                    img.src = `https://placehold.co/150x200/e2e8f0/94a3b8?text=Фото+не+найдено`;
+                    img.alt = `Ошибка загрузки фото ${person.name}`;
+                };
+
+                card.appendChild(img);
+                photosEl.appendChild(card);
+            });
+        };
+
+        // --- ОБРАБОТЧИКИ СОБЫТИЙ ---
+
+        function handlePhotoClick(card) {
+            // Снимаем выделение с предыдущей карточки
+            if (selectedPhotoCard && selectedPhotoCard !== card) {
+                selectedPhotoCard.classList.remove('selected');
+            }
+
+            // Выделяем новую карточку
+            card.classList.add('selected');
+            selectedPhotoCard = card;
+            instructionEl.textContent = `Выбрано фото. Теперь нажмите на имя.`;
+
+            // На мобильных устройствах открываем модальное окно
+            if (window.innerWidth < 1024) {
+                namesModal.classList.remove('hidden');
+                namesModal.classList.add('flex');
+            }
+        }
+
+        function handleNameClick(chosenName) {
+            if (!selectedPhotoCard) {
+                 msgEl.textContent = `Сначала выберите фотографию!`;
+                 msgEl.className = 'text-xl font-semibold text-amber-600';
+                 setTimeout(() => msgEl.textContent = '', 2000);
+                 return;
+            }
+
+            const correctName = selectedPhotoCard.dataset.name;
+
+            if (chosenName === correctName) {
+                handleCorrectMatch(correctName);
+            } else {
+                handleWrongMatch();
+            }
+
+            // Скрываем модальное окно и сбрасываем выделение
+            if (window.innerWidth < 1024) {
+                namesModal.classList.add('hidden');
+                namesModal.classList.remove('flex');
+            }
+        }
+
+        // --- ЛОГИКА РЕЗУЛЬТАТОВ ---
+
+        const handleCorrectMatch = (correctName) => {
+            msgEl.textContent = `✅ Верно! Это ${correctName}.`;
+            msgEl.className = 'text-xl font-semibold text-green-600';
+            
+            const person = people.find(p => p.name === correctName);
+            if (person) person.matched = true;
+
+            selectedPhotoCard.classList.add('matched');
+            
+            matchedCount++;
+            updateProgress();
+            renderNames(); // Обновляем список имён
+
+            // Сбрасываем выделение и инструкцию
+            selectedPhotoCard = null;
+            instructionEl.textContent = `Нажмите на фото, чтобы выбрать.`;
+
+            if (matchedCount === totalPeople) {
+                endGame();
+            }
+        };
+        
+        const handleWrongMatch = () => {
+            msgEl.textContent = '❌ Неверно, попробуйте снова.';
+            msgEl.className = 'text-xl font-semibold text-red-600';
+            selectedPhotoCard.classList.add('shake');
+
+            selectedPhotoCard.addEventListener('animationend', () => {
+                selectedPhotoCard.classList.remove('shake');
+            }, { once: true });
+        };
+
+        const endGame = () => {
+            msgEl.textContent = '🎉 Отлично! Вы нашли все пары!';
+            msgEl.className = 'text-2xl font-bold text-blue-600';
+            progressEl.textContent = `Результат: ${totalPeople} из ${totalPeople}!`;
+            instructionEl.textContent = 'Игра окончена!';
+            restartBtn.classList.remove('hidden');
+        };
+        
+        const initGame = () => {
+            people = imageFilenames.map(f => ({ name: f.replace(/\.jpe?g$/i, ''), matched: false }));
+            totalPeople = people.length;
+            matchedCount = 0;
+            selectedPhotoCard = null;
+
+            msgEl.textContent = '';
+            instructionEl.textContent = 'Нажмите на фото, чтобы выбрать.';
+            restartBtn.classList.add('hidden');
+            
+            updateProgress();
+            renderPhotos();
+            renderNames();
+        };
+
+        // --- СЛУШАТЕЛИ ---
+        restartBtn.addEventListener('click', initGame);
+        closeModalBtn.addEventListener('click', () => {
+            namesModal.classList.add('hidden');
+            namesModal.classList.remove('flex');
+        });
+
+        // Первый запуск
+        initGame();
+    });
 </script>
 </body>
 </html>
