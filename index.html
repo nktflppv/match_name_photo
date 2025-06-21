@@ -61,15 +61,37 @@
 <p id="message"></p>
 <script>
   const inputFolder = 'input_photos';
-  const people = [
-    "Юра Галишников",
-    "Никита Филиппов",
-    "Анна Смирнова",
-    "Елена Иванова",
-    "Игорь Романов",
-    "Мария Петрова",
-    "Артем Козлов"
+  const imageFilenames = [
+    "Юра Галишников.jpeg",
+    "Юля Цуркан.jpeg",
+    "Юля Клапатюк.jpeg",
+    "Сережа Григорьев.jpeg",
+    "Рома Янцер.jpeg",
+    "Полина Довнорович.jpeg",
+    "Никита Филиппов.jpeg",
+    "Наташа Кутукова.jpeg",
+    "Настя Канева.jpeg",
+    "Настя Аносова.jpeg",
+    "Маша Харламова.jpeg",
+    "Маша Овчинникова.jpeg",
+    "Максим Матиенко.jpeg",
+    "Максим Артёмов.jpeg",
+    "Любава Кашина.jpeg",
+    "Ксюша Курдзюк.jpeg",
+    "Кристина Филиппова.jpeg",
+    "Кристина Филимонова.jpeg",
+    "Кирилл Сухов.jpeg",
+    "Илья Лазарев.jpeg",
+    "Ева Устюгова.jpeg",
+    "Даша Доронина.jpeg",
+    "Даня Алепенков.jpeg",
+    "Гузя Гильмутдинова.jpeg",
+    "Вика Инькова.jpeg",
+    "Ариша Панчул.jpeg",
+    "Алёна Третьякова.jpeg"
   ];
+
+  const people = imageFilenames.map(name => name.replace(/\.jpe?g$/i, ''));
 
   const photos = document.getElementById('photos');
   const names = document.getElementById('names');
