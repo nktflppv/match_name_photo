@@ -3,153 +3,81 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Найди пару: Хозяин и Собака</title>
+  <title>Найди имя к фотографии</title>
   <style>
-    * { box-sizing: border-box; }
     body {
       font-family: 'Segoe UI', sans-serif;
-      background: linear-gradient(135deg, #fceabb, #f8b500);
+      background: #fff8dc;
       margin: 0;
       padding: 20px;
       text-align: center;
     }
     h1 {
-      margin-bottom: 10px;
       font-size: 1.8em;
       color: #333;
-    }
-    #instruction {
-      background: white;
-      padding: 10px;
-      border-radius: 10px;
-      box-shadow: 0 0 10px rgba(0,0,0,0.1);
-      margin-bottom: 20px;
-    }
-    #timer {
-      font-weight: bold;
-      margin-bottom: 10px;
     }
     .game-board {
       display: flex;
       justify-content: center;
-      gap: 40px;
       flex-wrap: wrap;
+      gap: 40px;
+      margin-top: 20px;
     }
     .column {
       display: flex;
       flex-direction: column;
       gap: 12px;
-      align-items: center;
     }
-    .card {
-      border: 3px solid transparent;
-      border-radius: 12px;
-      padding: 6px;
+    .card, .label {
+      padding: 8px;
       background: white;
-      box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+      border-radius: 10px;
+      box-shadow: 0 0 6px rgba(0,0,0,0.1);
       cursor: pointer;
-      transition: all 0.3s ease;
+      transition: 0.3s;
     }
     .card img {
-      width: 90px;
-      height: 90px;
+      width: 100px;
+      height: 100px;
       object-fit: cover;
-      border-radius: 10px;
-    }
-    .selected { border-color: dodgerblue; transform: scale(1.05); }
-    .correct { border-color: limegreen; animation: pulse 0.4s; }
-    .wrong { border-color: crimson; animation: shake 0.4s; }
-
-    @keyframes shake {
-      0%, 100% { transform: translateX(0); }
-      25% { transform: translateX(-5px); }
-      75% { transform: translateX(5px); }
-    }
-    @keyframes pulse {
-      0% { transform: scale(1); }
-      50% { transform: scale(1.2); }
-      100% { transform: scale(1); }
-    }
-
-    #message {
-      margin: 15px auto;
-      font-size: 1.2em;
-      font-weight: bold;
-    }
-    #restartBtn {
-      display: none;
-      margin-top: 15px;
-      padding: 10px 20px;
-      font-size: 16px;
-      background-color: #4CAF50;
-      color: white;
-      border: none;
       border-radius: 8px;
-      cursor: pointer;
     }
-    @media (max-width: 600px) {
-      .game-board {
-        flex-wrap: nowrap;
-      }
-      .card img {
-        width: 70px;
-        height: 70px;
-      }
+    .selected { border: 2px solid dodgerblue; }
+    .correct { border: 2px solid green; }
+    .wrong { border: 2px solid red; }
+    #message {
+      margin-top: 15px;
+      font-weight: bold;
     }
   </style>
 </head>
 <body>
-<h1>Найди пару: Хозяин и Собака</h1>
-<div id="instruction">Выберите подходящие пары: собака и её хозяин. Найденные пары исчезают. Ошибка — +5 секунд к таймеру. Удачи!</div>
-<div id="timer">⏱ Время: 0 секунд</div>
+<h1>Найди имя к фотографии</h1>
+<p>Кликните по фото и соответствующему имени</p>
 <div class="game-board">
-  <div class="column" id="owners"></div>
-  <div class="column" id="dogs"></div>
+  <div class="column" id="photos"></div>
+  <div class="column" id="names"></div>
 </div>
 <p id="message"></p>
-<button id="restartBtn" onclick="location.reload()">Сыграть снова</button>
 <script>
-  const totalPairs = 7;
-  const pairs = [];
-  for (let i = 1; i <= totalPairs; i++) {
-    pairs.push({ owner: `img/owner${i}.jpeg`, dog: `img/dog${i}.jpeg`, id: i });
-  }
+  const inputFolder = 'input_photos';
+  const people = [
+    "Юра Галишников",
+    "Никита Филиппов",
+    "Анна Смирнова",
+    "Елена Иванова",
+    "Игорь Романов",
+    "Мария Петрова",
+    "Артем Козлов"
+  ];
 
-  const owners = document.getElementById('owners');
-  const dogs = document.getElementById('dogs');
+  const photos = document.getElementById('photos');
+  const names = document.getElementById('names');
   const message = document.getElementById('message');
-  const restartBtn = document.getElementById('restartBtn');
-  const timerDisplay = document.getElementById('timer');
 
-  let selectedOwner = null;
-  let selectedDog = null;
-  let score = 0;
-  let matchedCount = 0;
-  let seconds = 0;
-  let timerInterval = null;
-
-  function startTimer() {
-    timerInterval = setInterval(() => {
-      seconds++;
-      timerDisplay.textContent = `⏱ Время: ${seconds} секунд`;
-    }, 1000);
-  }
-
-  function stopTimer() {
-    clearInterval(timerInterval);
-  }
-
-  function createCard(src, type, id) {
-    const card = document.createElement('div');
-    card.className = 'card';
-    card.dataset.type = type;
-    card.dataset.id = id;
-    const img = document.createElement('img');
-    img.src = src;
-    card.appendChild(img);
-    card.addEventListener('click', () => selectCard(card));
-    return card;
-  }
+  let selectedPhoto = null;
+  let selectedName = null;
+  let matched = 0;
 
   function shuffle(array) {
     for (let i = array.length - 1; i > 0; i--) {
@@ -158,74 +86,72 @@
     }
   }
 
-  function renderGame() {
-    const shuffledOwners = [...pairs];
-    const shuffledDogs = [...pairs];
-    shuffle(shuffledOwners);
-    shuffle(shuffledDogs);
-
-    shuffledOwners.forEach(p => owners.appendChild(createCard(p.owner, 'owner', p.id)));
-    shuffledDogs.forEach(p => dogs.appendChild(createCard(p.dog, 'dog', p.id)));
-    startTimer();
+  function createPhotoCard(name) {
+    const div = document.createElement('div');
+    div.className = 'card';
+    div.dataset.name = name;
+    const img = document.createElement('img');
+    img.src = `${inputFolder}/${name}.jpeg`;
+    img.alt = name;
+    div.appendChild(img);
+    div.addEventListener('click', () => selectCard(div, 'photo'));
+    return div;
   }
 
-  function resetSelections() {
-    selectedOwner?.classList.remove('selected');
-    selectedDog?.classList.remove('selected');
-    selectedOwner = null;
-    selectedDog = null;
+  function createNameLabel(name) {
+    const div = document.createElement('div');
+    div.className = 'label';
+    div.textContent = name;
+    div.dataset.name = name;
+    div.addEventListener('click', () => selectCard(div, 'name'));
+    return div;
   }
 
-  function showFeedback(card1, card2, correct) {
-    const cls = correct ? 'correct' : 'wrong';
-    card1.classList.add(cls);
-    card2.classList.add(cls);
-    setTimeout(() => {
-      card1.classList.remove(cls);
-      card2.classList.remove(cls);
-      if (!correct) resetSelections();
-    }, 400);
-  }
-
-  function selectCard(card) {
-    const type = card.dataset.type;
-    if (type === 'owner') {
-      if (selectedOwner) selectedOwner.classList.remove('selected');
-      selectedOwner = card;
-      card.classList.add('selected');
+  function selectCard(el, type) {
+    if (type === 'photo') {
+      if (selectedPhoto) selectedPhoto.classList.remove('selected');
+      selectedPhoto = el;
+      el.classList.add('selected');
     } else {
-      if (selectedDog) selectedDog.classList.remove('selected');
-      selectedDog = card;
-      card.classList.add('selected');
+      if (selectedName) selectedName.classList.remove('selected');
+      selectedName = el;
+      el.classList.add('selected');
     }
 
-    if (selectedOwner && selectedDog) {
-      const ownerId = selectedOwner.dataset.id;
-      const dogId = selectedDog.dataset.id;
-      if (ownerId === dogId) {
-        score++;
-        matchedCount++;
-        message.textContent = `✅ Верно! Счёт: ${score}`;
-        showFeedback(selectedOwner, selectedDog, true);
-        setTimeout(() => {
-          selectedOwner.remove();
-          selectedDog.remove();
-          resetSelections();
-          if (matchedCount === totalPairs) {
-            stopTimer();
-            message.textContent = `🎉 Победа! Вы угадали все пары за ${seconds} секунд.`;
-            restartBtn.style.display = 'inline-block';
-          }
-        }, 500);
+    if (selectedPhoto && selectedName) {
+      const name1 = selectedPhoto.dataset.name;
+      const name2 = selectedName.dataset.name;
+
+      if (name1 === name2) {
+        selectedPhoto.classList.add('correct');
+        selectedName.classList.add('correct');
+        selectedPhoto.style.pointerEvents = 'none';
+        selectedName.style.pointerEvents = 'none';
+        matched++;
+        message.textContent = `✅ Верно: ${name1}`;
       } else {
-        seconds += 5;
-        message.textContent = '❌ Неверно. +5 секунд. Попробуйте снова';
-        showFeedback(selectedOwner, selectedDog, false);
+        selectedPhoto.classList.add('wrong');
+        selectedName.classList.add('wrong');
+        message.textContent = `❌ Ошибка: это не ${name1}`;
+        setTimeout(() => {
+          selectedPhoto.classList.remove('wrong', 'selected');
+          selectedName.classList.remove('wrong', 'selected');
+        }, 800);
+      }
+
+      selectedPhoto = null;
+      selectedName = null;
+
+      if (matched === people.length) {
+        message.textContent = "🎉 Игра завершена! Все пары найдены.";
       }
     }
   }
 
-  renderGame();
+  shuffle(people);
+  people.forEach(p => photos.appendChild(createPhotoCard(p)));
+  shuffle(people);
+  people.forEach(p => names.appendChild(createNameLabel(p)));
 </script>
 </body>
 </html>
